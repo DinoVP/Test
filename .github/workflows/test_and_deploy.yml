@@ -4,11 +4,12 @@ on:
   push:
     branches: ["main"]
 
-# KHẮC PHỤC LỖI #1: Cấp quyền cho Token
+# Cấp đủ quyền cho Token (Đã Fix Lỗi Deployment)
 permissions:
   contents: read 
-  pages: write   
-  id-token: write 
+  pages: write 
+  id-token: write
+  actions: write # Tối ưu: Cần thiết cho các tính năng cache và bảo trì
   
 jobs:
   # 1. JOB KIỂM THỬ (CI Stage - Test)
@@ -24,19 +25,21 @@ jobs:
           node-version: '20'
 
       - name: 🔍 Chạy Kiểm thử Cú pháp HTML (Linting)
+        # Tối ưu: Dùng file index.html để khớp với tên file mới
         run: |
           npm install html-validate 
-          npx html-validate --formatter=stylish Login.html
+          npx html-validate --formatter=stylish index.html 
 
   # 2. JOB TRIỂN KHAI (CD Stage - Deploy)
   deployment:
+    # Chỉ chạy nếu Test thành công (Đảm bảo chất lượng)
     needs: lint_test 
     runs-on: ubuntu-latest
     
-    # KHẮC PHỤC LỖI #2: Chỉ định môi trường triển khai
+    # Chỉ định môi trường (Đã Fix Lỗi 400 - Missing environment)
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # Lấy URL sau khi triển khai
+      url: ${{ steps.deployment.outputs.page_url }} 
       
     steps:
       - name: ⬇️ Checkout Code
@@ -48,7 +51,7 @@ jobs:
       - name: 📦 Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './' 
+          path: './' # Upload tất cả file trong thư mục gốc
 
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
