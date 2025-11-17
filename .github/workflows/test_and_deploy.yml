@@ -2,10 +2,16 @@ name: CI/CD Test & Deploy Static
 
 on:
   push:
-    branches: ["main"] # Kích hoạt khi code được đẩy lên nhánh main
+    branches: ["main"]
+
+# KHỐI CODE QUAN TRỌNG ĐÃ SỬA LỖI (Fixes Error: Ensure GITHUB_TOKEN has permission)
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  # 1. JOB KIỂM THỬ (CI Stage)
+  # 1. JOB KIỂM THỬ (CI Stage - Test)
   lint_test:
     runs-on: ubuntu-latest
     steps:
@@ -15,34 +21,36 @@ jobs:
       - name: ⚙️ Cài đặt Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: 🔍 Chạy Kiểm thử Cú pháp HTML (Linting)
-        # Sử dụng một công cụ linting phổ biến cho HTML/CSS
-        # Ví dụ: html-validate hoặc dùng linter cho các file tĩnh
+        # Bắt buộc phải có package.json hoặc lệnh cài đặt như thế này
         run: |
           npm install html-validate # Cài đặt công cụ kiểm thử
           npx html-validate --formatter=stylish Login.html # Chạy kiểm thử trên file Login.html
 
-      # => NẾU BƯỚC NÀY FAIL, CẢ WORKFLOW DỪNG LẠI (NGUYÊN TẮC FAIL FAST)
+      # 💡 LƯU Ý: Nếu bước này FAIL, toàn bộ Workflow sẽ dừng lại.
 
-  # 2. JOB TRIỂN KHAI (CD Stage)
+  # 2. JOB TRIỂN KHAI (CD Stage - Deploy)
   deployment:
-    needs: lint_test # CHỈ CHẠY NẾU BƯỚC 'lint_test' THÀNH CÔNG
+    # CHỈ CHẠY NẾU BƯỚC 'lint_test' THÀNH CÔNG
+    needs: lint_test
     runs-on: ubuntu-latest
     steps:
       - name: ⬇️ Checkout Code
         uses: actions/checkout@v4
-      
-      # Các bước triển khai GitHub Pages tương tự như trước
+
+      # 1. Setup Pages
       - name: 🏗️ Setup Pages
         uses: actions/configure-pages@v5
 
+      # 2. Upload Artifact
       - name: 📦 Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './'
+          path: "./" # Upload tất cả file trong thư mục gốc
 
+      # 3. Deploy
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
