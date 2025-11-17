@@ -4,12 +4,12 @@ on:
   push:
     branches: ["main"]
 
-# Cấp đủ quyền cho Token (Đã Fix Lỗi Deployment)
+# Cấp đủ quyền cho Token (Đã Fix Lỗi Deployment 403 & ID-Token)
 permissions:
   contents: read 
   pages: write 
   id-token: write
-  actions: write # Tối ưu: Cần thiết cho các tính năng cache và bảo trì
+  actions: write 
   
 jobs:
   # 1. JOB KIỂM THỬ (CI Stage - Test)
@@ -25,14 +25,14 @@ jobs:
           node-version: '20'
 
       - name: 🔍 Chạy Kiểm thử Cú pháp HTML (Linting)
-        # Tối ưu: Dùng file index.html để khớp với tên file mới
+        # SỬA: Đã cập nhật từ Login.html sang index.html để khắc phục lỗi CI
         run: |
           npm install html-validate 
           npx html-validate --formatter=stylish index.html 
 
   # 2. JOB TRIỂN KHAI (CD Stage - Deploy)
   deployment:
-    # Chỉ chạy nếu Test thành công (Đảm bảo chất lượng)
+    # Chỉ chạy nếu Test thành công (Fail Fast)
     needs: lint_test 
     runs-on: ubuntu-latest
     
