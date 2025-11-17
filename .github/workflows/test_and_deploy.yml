@@ -1,0 +1,48 @@
+name: CI/CD Test & Deploy Static
+
+on:
+  push:
+    branches: ["main"] # Kích hoạt khi code được đẩy lên nhánh main
+
+jobs:
+  # 1. JOB KIỂM THỬ (CI Stage)
+  lint_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Cài đặt Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔍 Chạy Kiểm thử Cú pháp HTML (Linting)
+        # Sử dụng một công cụ linting phổ biến cho HTML/CSS
+        # Ví dụ: html-validate hoặc dùng linter cho các file tĩnh
+        run: |
+          npm install html-validate # Cài đặt công cụ kiểm thử
+          npx html-validate --formatter=stylish Login.html # Chạy kiểm thử trên file Login.html
+
+      # => NẾU BƯỚC NÀY FAIL, CẢ WORKFLOW DỪNG LẠI (NGUYÊN TẮC FAIL FAST)
+
+  # 2. JOB TRIỂN KHAI (CD Stage)
+  deployment:
+    needs: lint_test # CHỈ CHẠY NẾU BƯỚC 'lint_test' THÀNH CÔNG
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v4
+      
+      # Các bước triển khai GitHub Pages tương tự như trước
+      - name: 🏗️ Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: 📦 Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './'
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
