@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
 
-# Cấp đủ quyền cho Token (Đã Fix Lỗi Deployment 403 & ID-Token)
+# KHẮC PHỤC LỖI #1 & #3: Cấp đủ quyền cho Deployment
 permissions:
   contents: read 
   pages: write 
@@ -12,31 +12,34 @@ permissions:
   actions: write 
   
 jobs:
-  # 1. JOB KIỂM THỬ (CI Stage - Test)
+  # 1. JOB KIỂM THỬ (CI Stage - Auto Test)
   lint_test:
     runs-on: ubuntu-latest
     steps:
-      - name: ⬇️ Checkout Code
+      - name: ⬇️ Checkout Code (Với tối ưu hóa định dạng)
         uses: actions/checkout@v4
-
+        with:
+          lfs: true
+          submodules: true 
+          
       - name: ⚙️ Cài đặt Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: 🔍 Chạy Kiểm thử Cú pháp HTML (Linting)
-        # SỬA: Đã cập nhật từ Login.html sang index.html để khắc phục lỗi CI
+        # Đã sửa lỗi: Trỏ đến index.html để khớp với tên file mới
         run: |
           npm install html-validate 
           npx html-validate --formatter=stylish index.html 
 
   # 2. JOB TRIỂN KHAI (CD Stage - Deploy)
   deployment:
-    # Chỉ chạy nếu Test thành công (Fail Fast)
+    # KHẮC PHỤC LỖI #4: Chỉ chạy nếu Test thành công
     needs: lint_test 
     runs-on: ubuntu-latest
     
-    # Chỉ định môi trường (Đã Fix Lỗi 400 - Missing environment)
+    # KHẮC PHỤC LỖI #2: Chỉ định môi trường triển khai
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }} 
@@ -51,7 +54,7 @@ jobs:
       - name: 📦 Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './' # Upload tất cả file trong thư mục gốc
+          path: './'
 
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
