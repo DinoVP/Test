@@ -1,37 +1,66 @@
-name: Deploy Static Site to GitHub Pages
+name: CI/CD cho Trang Web Tĩnh (HTML/CSS)
 
-# Kích hoạt quy trình khi có bất kỳ push nào lên nhánh 'main'
+# Kích hoạt quy trình khi có Push lên nhánh 'main'
 on:
   push:
     branches:
       - main
-  # Cho phép chạy thủ công từ giao diện GitHub
   workflow_dispatch:
 
-# Định nghĩa các job
+# Định nghĩa các Quyền Hạn (Permissions) cần thiết cho triển khai
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+#CI
 jobs:
-  # Job chính để xây dựng (Build) và triển khai (Deploy)
-  deploy:
+  build:
+    name: CI - Build and Test
     runs-on: ubuntu-latest
 
-    # Các bước thực hiện
     steps:
-      # 1. Lấy mã nguồn từ repository
-      - name: Checkout Repository
+      # Bước 1 (CI): Lấy mã nguồn
+      - name: 1. Checkout Repository (Lấy mã nguồn)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # 2. Thiết lập môi trường GitHub Pages (cần thiết cho GitHub Pages)
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-      
-      # 3. Đóng gói các file cần triển khai (toàn bộ thư mục gốc '.')
-      - name: Upload artifact
+      # Bước 2 (CI - Ví dụ): Kiểm tra sự tồn tại của file
+      - name: 2. Simple Lint/Validation (Kiểm tra cơ bản)
+        run: |
+          echo "Bắt đầu kiểm tra Tích hợp Liên tục (CI)..."
+          if [ -f "index.html" ]; then
+            echo "index.html: OK"
+          else
+            echo "Lỗi: Không tìm thấy file index.html"
+            exit 1 # Báo lỗi và dừng CI
+          fi
+          echo "Tất cả các kiểm tra CI đã hoàn thành thành công."
+
+      # Bước 3 (CI): Đóng gói Artifact (sản phẩm)
+      - name: 3. Create and Upload Artifact (Đóng gói sản phẩm)
         uses: actions/upload-pages-artifact@v3
         with:
-          # Thư mục chứa các file tĩnh (HTML, CSS,...)
-          path: './'
+          path: "./"
 
-      # 4. Triển khai Artifact lên môi trường GitHub Pages
-      - name: Deploy to GitHub Pages
+  #CD
+  deploy:
+    name: CD - Deploy to GitHub Pages
+    # Chỉ chạy job này khi job 'build' (CI) thành công
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Bước 4 (CD): Thiết lập môi trường Pages
+      - name: 4. Setup GitHub Pages Environment (Thiết lập môi trường)
+        uses: actions/configure-pages@v4
+
+      # Bước 5 (CD): Triển khai Artifact
+      # Sử dụng Artifact đã được đóng gói từ job 'build'
+      - name: 5. Deploy to GitHub Pages (Triển khai chính thức)
         id: deployment
         uses: actions/deploy-pages@v4
